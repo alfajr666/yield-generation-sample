@@ -1,0 +1,16 @@
+# Exclude Briefs and Plans
+AGENT_BRIEF.md
+YIELD_PROJECT_CONTEXT.md
+implementation_plan.md
+task.md
+walkthrough.md
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env
+venv/
+
+# Data (Optional: keep or exclude processed if large, usually keep for samples)
+# data/processed/
