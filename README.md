@@ -31,9 +31,9 @@ Treasury managers in high-growth fintechs face a dual-world dilemma:
 
 | Metric | Min Risk | Balanced | Max Yield |
 |--------|----------|----------|-----------|
-| **Expected Yield (IDR)** | **5.15%** | **8.51%** | **12.46%** |
-| **95% CVaR** | **+3.38%** (Tail Gain) | **+1.01%** (Tail Gain) | **-7.77%** (Tail Loss) |
-| **Pendle YT Exposure** | 1.2% | 15.0% | 15.0% |
+| **Expected Yield (IDR)** | **5.16%** | **8.51%** | **12.44%** |
+| **95% CVaR (Loss)** | **-3.39%** (Gain) | **-1.08%** (Gain) | **+7.64%** (Loss) |
+| **Pendle YT Exposure** | 1.3% | 15.0% | 14.8% |
 | **MMF + SBN Weight** | 98.7% | 69.2% | 0.5% |
 | **Aave Exposure** | 0.0% | 0.0% | 34.5% |
 
@@ -58,9 +58,9 @@ During stress regimes (triggered by >15% TVL drops), the model assumes:
 - **Volatility Floor**: Minimum 2% annual vol for SBN, 5% for Crypto.
 
 ### 3. CVaR Sign Convention
-This model uses an **intuitive sign convention**:
-- **Positive CVaR**: The average yield in the worst 5% of cases is still a gain.
-- **Negative CVaR**: The average outcome in the worst 5% of cases is a loss.
+This model follows the **industry consensus** (as seen in Investopedia):
+- **Positive CVaR (+)**: Represents the **Expected Tail Loss**. A value of 3% means you expect to lose 3% on average in the worst 5% of scenarios.
+- **Negative CVaR (-)**: Represents an **Expected Tail Gain**. A negative value means even in the worst 5% of scenarios, the portfolio is expected to remain profitable.
 
 ---
 

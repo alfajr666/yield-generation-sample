@@ -38,12 +38,12 @@ def run_visualization():
 
     fig.update_layout(
         title='Efficient Frontier: Annualized Yield vs 95% CVaR',
-        xaxis_title='95% CVaR (Expected Tail Loss/Gain)',
+        xaxis_title='95% CVaR (Expected Tail Loss)',
         yaxis_title='Annualized Risk-Adjusted Yield (IDR)',
         template='plotly_white'
     )
     # Ensure sign convention reflection in axis title
-    fig.update_xaxes(title_text='95% CVaR (Positive = Gain, Negative = Loss)')
+    fig.update_xaxes(title_text='95% CVaR (Positive = Loss, Negative = Gain)')
     
     fig.write_image(os.path.join(ROOT_DIR, 'data/processed/charts/efficient_frontier.png'))
 

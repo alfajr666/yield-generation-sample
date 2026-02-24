@@ -64,7 +64,7 @@ def run_frontier(expected_returns, cov_matrix, base_constraints, returns_scenari
             results.append({
                 "target_return": float(target),
                 "expected_return": float(expected_returns @ w.value),
-                "cvar_95": -float(prob.value),
+                "cvar_95": float(prob.value),
                 "weights": w.value.tolist()
             })
             
