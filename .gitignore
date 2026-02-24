@@ -1,3 +1,8 @@
+# OS files
+.DS_Store
+data/.DS_Store
+data/processed/.DS_Store
+
 # Exclude Briefs and Plans
 AGENT_BRIEF.md
 YIELD_PROJECT_CONTEXT.md

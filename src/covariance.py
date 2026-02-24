@@ -32,28 +32,36 @@ def blend_covariance(cov_normal, cov_stress, stress_prob=0.15):
 
 def construct_stress_covariance_assumption(cov_normal):
     """
-    Fallback if stress data is insufficient: assumes high correlation among crypto assets.
+    Fallback if stress data is insufficient: assumes high correlation among assets
+    and amplifies volatility to capture extreme tail tail risk across the system.
     """
     vols = np.sqrt(np.diag(cov_normal))
-    # Correlation matrix:
-    # 0: mmf, 1: sbn, 2: aave, 3: pendle_pt, 4: pendle_yt
+    
+    # Indices: [aave, mmf, pendle_pt, pendle_yt, sbn]
+    # Note: Indices mapping from re_run_pipeline.py Step 04
+    crypto_indices = [0, 2, 3] # aave, pendle_pt, pendle_yt
+    offchain_indices = [1, 4]  # mmf, sbn
+    
+    vols_stress = vols.copy()
+    
+    # SYSTEMIC STRESS: Even 'safe' assets are amplified
+    # Multiplier: 2x for off-chain, 3x for crypto
+    for i in offchain_indices:
+        vols_stress[i] = max(vols[i] * 2.0, 0.02) # Min 2% vol floor for SBN/MMF
+        
+    for i in crypto_indices:
+        vols_stress[i] = max(vols[i] * 3.0, 0.05) # Min 5% vol floor for Crypto
+        
     n = len(vols)
     corr_stress = np.eye(n)
     
-    # Set on-chain/on-chain correlations to 0.85 (indices 2, 3, 4)
-    crypto_indices = [2, 3, 4]
-    for i in crypto_indices:
-        for j in crypto_indices:
+    # High system-wide correlation during stress (0.75 for all assets)
+    # This reflects a systemic liquidity/market shock where diversification fails.
+    for i in range(n):
+        for j in range(n):
             if i != j:
-                corr_stress[i, j] = 0.85
+                corr_stress[i, j] = 0.75
                 
-    # Set on-chain/off-chain correlations to -0.10
-    offchain_indices = [0, 1]
-    for i in crypto_indices:
-        for j in offchain_indices:
-            corr_stress[i, j] = -0.10
-            corr_stress[j, i] = -0.10
-            
     # Reconstruct covariance: V * Corr * V
-    stress_cov = np.outer(vols, vols) * corr_stress
+    stress_cov = np.outer(vols_stress, vols_stress) * corr_stress
     return pd.DataFrame(stress_cov, index=cov_normal.index, columns=cov_normal.columns)

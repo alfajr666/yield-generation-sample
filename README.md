@@ -1,68 +1,153 @@
 # 💰 Yield Generation & Optimization Model
 
-A professional FinOps/Treasury model designed for crypto exchanges and institutional investors to optimize yield across a mix of traditional (IDR) and on-chain (USD) instruments.
-
-This repository implements a **CVaR-based Efficient Frontier** pipeline that converts volatile yields into risk-adjusted, unified metrics to support strategic capital allocation.
-
-## 🌟 Key Features
-
-- **Unified Yield Normalization**: Seamlessly blends off-chain Indonesian instruments (SBN, MMF) with on-chain protocols (Aave, Pendle).
-- **Multi-Factor Risk Haircuts**: Accounts for smart-contract exploit probabilities and liquidity exit costs.
-- **Regime-Aware Modeling**: Dynamically adjusts covariance matrices based on market stress indicators (TVL drops).
-- **CVaR Optimization**: Uses Conditional Value at Risk as the primary objective to prioritize downside protection over simple variance reduction.
-- **Python-Native Pipeline**: Fully automated data fetching, normalization, and optimization via `cvxpy`.
-
-## 📊 Core Performance Metrics
-
-The model outputs three distinct target portfolios:
-
-| Portfolio | Expected Yield (IDR) | 95% CVaR | Strategy Focus |
-|-----------|----------------------|----------|----------------|
-| **Min Risk** | ~4.5% | -4.5% | High Liquidity, Low Volatility (MMF / Aave) |
-| **Balanced** | ~10.7% | -10.6% | Optimized mix of SBN and Base Yields |
-| **Max Yield** | ~18.9% | -14.6% | High allocation to Pendle YT/PT within caps |
-
-## 🏗️ Technical Architecture
-
-```text
-.
-├── data
-│   ├── raw           # Input data (SBN, USD/IDR, MMF NAV, DeFiLlama)
-│   └── processed     # Unified yields, blended covariance, and frontier data
-├── notebooks         # Execution Pipeline (00 to 05)
-├── src               # Core Logic (Risk adjustment, Normalization, Optimizer)
-├── scripts           # Robust standalone execution scripts
-└── requirements.txt  # Project dependencies
-```
-
-### The Pipeline
-1. **Research**: Fetch live DeFi data and define security/liquidity parameters.
-2. **Normalization**: Convert all yields to annualized IDR terms.
-3. **Risk Adjustment**: Apply empirical haircuts for protocol risks.
-4. **Regime Modeling**: Classify market conditions and estimate blended covariance.
-5. **Optimization**: Construct the Efficient Frontier.
-
-## 🚦 Getting Started
-
-### Prerequisites
-- Python 3.9+
-- `pip install -r requirements.txt`
-
-### Running the Model
-For a step-by-step walkthrough, run the notebooks in order:
-```bash
-# Or run the automation scripts
-python3 scripts/process_normalization.py
-python3 scripts/process_risk_adjustment.py
-python3 scripts/process_covariance.py
-python3 scripts/process_optimization.py
-```
-
-## 🛠️ Tech Stack
-- **Optimization**: [CVXPY](https://www.cvxpy.org/) (SCS/Clarabel Solvers)
-- **Data Handling**: Pandas, NumPy
-- **API Integration**: DeFiLlama
-- **Visualization**: Plotly
+**Portfolio Project by Gilang Fajar Wijayanto**  
+Senior Treasury & Finance Operations Specialist | CFA Level I | FRM Part I  
+[delomite.com](https://delomite.com) | [LinkedIn](https://www.linkedin.com/in/gilang-fajar-6973119a/)
 
 ---
-*Disclaimer: This is a sample model for institutional treasury research and does not constitute financial advice.*
+
+## 📋 Overview
+
+This repository demonstrates a **production-grade Yield Optimization Model** designed for institutional treasuries and digital asset exchanges. It solves the critical challenge of capital allocation across a fragmented yield landscape by unifying traditional IDR-based instruments (SBN, MMF) and on-chain USD-based DeFi protocols (Aave, Pendle) into a single, risk-adjusted framework.
+
+### Business Context
+Treasury managers in high-growth fintechs face a dual-world dilemma:
+1. **Traditional World**: Low volatility, IDR-denominated instruments like MMF (4.5%) or SBN (5.5%).
+2. **On-Chain World**: High yield, USD-denominated DeFi assets like Pendle (18-20%).
+
+**The Challenge**: How to capture double-digit crypto yields without exposing the principal to excessive tail risk or smart-contract exploit events.
+
+### Key Features
+- ✅ **Unified Yield Normalization**: Annualizes and converts all yields to IDR terms, accounting for FX drift and protocol costs.
+- ✅ **Multi-Factor Risk Haircuts**: Applies empirical discounts based on smart-contract exploit probability (p) and severity (s).
+- ✅ **Systemic Stress Modeling**: Blends normal and stress covariance matrices using a 15% stress-state probability.
+- ✅ **CVaR Optimization**: Uses Conditional Value at Risk (Expected Tail Loss) as the objective function to prioritize principal protection.
+- ✅ **Regime-Aware Correlation**: Models "liquidity contagion" by forcing 0.75 cross-asset correlation during stress events.
+- ✅ **Automated Pipeline**: End-to-end Python pipeline from DeFiLlama ingestion to Plotly-based visualization.
+
+---
+
+## 📊 System Metrics (Refined Optimization)
+
+| Metric | Min Risk | Balanced | Max Yield |
+|--------|----------|----------|-----------|
+| **Expected Yield (IDR)** | **5.15%** | **8.51%** | **12.46%** |
+| **95% CVaR** | **+3.38%** (Tail Gain) | **+1.01%** (Tail Gain) | **-7.77%** (Tail Loss) |
+| **Pendle YT Exposure** | 1.2% | 15.0% | 15.0% |
+| **MMF + SBN Weight** | 98.7% | 69.2% | 0.5% |
+| **Aave Exposure** | 0.0% | 0.0% | 34.5% |
+
+### Strategy Assessment
+- **Min Risk**: Prioritizes principal safety. Even in the worst 5% of systemic scenarios, the portfolio targets a positive yield (+3.38%), anchored by high Indonesian base rates.
+- **Max Yield**: Aggressive allocation within regulatory constraints. Strictly respects the 15% Pendle YT cap and 50% single-protocol limit.
+
+---
+
+## 📐 Methodology
+
+### 1. Risk-Adjusted Yield (RAY)
+Theoretical yield is haircutted based on technical and operational risks:
+```
+RAY = Yield_Raw - (P_Exploit × S_Severity) - Liquidity_Haircut
+```
+
+### 2. Systemic stress Fallback
+During stress regimes (triggered by >15% TVL drops), the model assumes:
+- **Volatility Amplification**: 2x multiplier for off-chain, 3x for crypto assets.
+- **Correlation Ceiling**: All correlations floor at 0.75 (systemic shock).
+- **Volatility Floor**: Minimum 2% annual vol for SBN, 5% for Crypto.
+
+### 3. CVaR Sign Convention
+This model uses an **intuitive sign convention**:
+- **Positive CVaR**: The average yield in the worst 5% of cases is still a gain.
+- **Negative CVaR**: The average outcome in the worst 5% of cases is a loss.
+
+---
+
+## 🗂️ Project Structure
+
+```
+yield-optimizer/
+├── data/                          # Pipeline data storage
+│   ├── raw/                       # TVL and Yield snapshots (DeFiLlama)
+│   └── processed/                 # Normalization and model results
+│       ├── frontier_portfolios.csv
+│       ├── named_portfolios.json
+│       └── charts/                # Generated visualizations
+│
+├── notebooks/                     # Exploratory analysis
+│   └── *.ipynb                    # Step 00 to 05 execution sequence
+│
+├── src/                           # Business logic (RAY, Normalization, Optimizer)
+│   ├── risk_adjustment.py
+│   ├── covariance.py
+│   └── optimizer.py               # CVXPY implementation
+│
+├── scripts/                       # Automation scripts
+│   ├── re_run_pipeline.py         # 1-click execution
+│   └── generate_charts.py         # Plotly visualization engine
+│
+├── requirements.txt               # Dependencies (cvxpy, plotly, pandas)
+└── README.md                      # This file
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Installation
+```bash
+git clone https://github.com/yourusername/yield-optimizer.git
+cd yield-optimizer
+pip install -r requirements.txt
+```
+
+### 2. Run the Model
+You can execute the entire optimization pipeline with a single command:
+```bash
+python3 scripts/re_run_pipeline.py
+```
+This script runs the risk adjustment, calculates the amplified systemic covariance, solves 100 frontier points, and generates final visualizations.
+
+### 3. View Results
+Final portfolio details are saved in `data/processed/named_portfolios.json`.
+Interactive charts (PNG) are available in `data/processed/charts/`.
+
+---
+
+## 📈 Technical Implementation Details
+
+### CVaR Formulation in CVXPY
+The model solves the following optimization problem for each target yield:
+```python
+minimize(zeta + (1 / (1 - confidence)) * sum(tail_loss) / num_scenarios)
+subject to:
+    weights >= 0
+    sum(weights) == 1
+    expected_returns @ weights >= target_yield
+    weights[yt_index] <= 0.15 # Pendle YT Cap
+```
+
+### Synthetic Scenario Sampling
+Because historical data often misses "black swan" events, the model generates **30,000 synthetic scenarios** via Multivariate Normal sampling from the blended systemic covariance matrix. This ensures the tail is sufficiently populated with stress events.
+
+---
+
+## 🎯 Use Cases
+- **Treasury Management**: Safely allocating idle stablecoin or fiat reserves.
+- **Yield Farming Strategy**: Optimizing Pendle and Aave exposure.
+- **Risk Reporting**: Quantifying the systemic tail risk of a crypto-trad mix.
+- **Audit Compliance**: Providing a math-first justification for protocol concentration limits.
+
+---
+
+## 🤝 Contact
+
+**Gilang Fajar Wijayanto**  
+📧 gilang.f@delomite.com  
+🌐 [delomite.com](https://delomite.com)  
+💼 [LinkedIn](https://www.linkedin.com/in/gilang-fajar-6973119a/)
+
+---
+
+*Disclaimer: This project is for institutional portfolio research and software demonstration. The performance results are based on synthetic data and modeling assumptions and do not represent financial advice.*
