@@ -149,5 +149,14 @@ Because historical data often misses "black swan" events, the model generates **
 💼 [LinkedIn](https://www.linkedin.com/in/gilang-fajar-6973119a/)
 
 ---
+## 📊 Recalibration Brief Results
+
+- Updated liquidity scores applied per data‑driven calculations.
+- `protocol_params.json` refreshed with new scores.
+- `risk_adjusted_returns.csv` generated and validated.
+- Frontiers re‑computed; see `data/processed/frontier_portfolios.csv`.
+- Charts (`efficient_frontier.png`, `allocation_stack.png`) added to `data/processed/charts/`.
+
+---
 
 *Disclaimer: This project is for institutional portfolio research and software demonstration. The performance results are based on synthetic data and modeling assumptions and do not represent financial advice.*
