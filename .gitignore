@@ -1,21 +1,46 @@
 # OS files
 .DS_Store
-data/.DS_Store
-data/processed/.DS_Store
-
-# Exclude Briefs and Plans
-AGENT_BRIEF.md
-YIELD_PROJECT_CONTEXT.md
-implementation_plan.md
-task.md
-walkthrough.md
+**/.DS_Store
+Thumbs.db
+desktop.ini
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
 .ipynb_checkpoints/
 .env
 venv/
+.python-version
 
-# Data (Optional: keep or exclude processed if large, usually keep for samples)
-# data/processed/
+# Documentation (Exclude dev-briefs and agents-noise)
+*.md
+!README.md
+README_backup.md
+.gemini/
+brain/
+
+# Core Data Structure
+# Include persistent yield data
+data/raw/*
+!data/raw/*.csv
+# Ignore intermediate processed data
+data/processed/*.csv
+# Keep important JSON config/results
+!data/processed/named_portfolios.json
+!data/processed/protocol_params.json
+# Keep charts for README visibility
+!data/processed/charts/
+
+# Scripts
+# Ignore research/debug noise in scripts folder
+scripts/*.py
+# Whitelist core entry points
+!scripts/re_run_pipeline.py
+!scripts/generate_charts.py
+!scripts/refresh_pendle_data.py
+!scripts/process_normalization.py
+!scripts/process_risk_adjustment.py
+!scripts/process_optimization.py
+!scripts/process_visualization.py

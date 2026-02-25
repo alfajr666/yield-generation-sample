@@ -40,15 +40,12 @@ def run_step_02():
     risk_df = pd.DataFrame(adjusted_rows)
     risk_df['liquidity_haircut'] = risk_df['mean_yield_idr'] - risk_df['expected_loss_haircut'] - risk_df['risk_adjusted_yield_idr']
     
-    # Fix 2: Sanity cap Pendle returns based on benchmarks
+    # Apply return caps from protocol_params if defined
+    risk_df = risk.apply_return_caps(risk_df, params)
+    
     if 'pendle_pt' in risk_df['instrument'].values:
-        pt_mask = risk_df['instrument'] == 'pendle_pt'
-        risk_df.loc[pt_mask, 'risk_adjusted_yield_idr'] = risk_df.loc[pt_mask, 'risk_adjusted_yield_idr'].clip(upper=0.14)
         print("Applied 14% sanity cap to Pendle PT.")
-        
     if 'pendle_yt' in risk_df['instrument'].values:
-        yt_mask = risk_df['instrument'] == 'pendle_yt'
-        risk_df.loc[yt_mask, 'risk_adjusted_yield_idr'] = risk_df.loc[yt_mask, 'risk_adjusted_yield_idr'].clip(upper=0.18)
         print("Applied 18% sanity cap to Pendle YT.")
         
     output_path = os.path.join(ROOT_DIR, 'data/processed/risk_adjusted_returns.csv')
@@ -90,8 +87,8 @@ def run_step_04(risk_adj_df):
     num_scenarios = 30000 
     returns_scenarios = np.random.multivariate_normal(mu, S, num_scenarios)
 
-    # Run frontier with fixed optimizer
-    frontier = opt.run_frontier(mu, S, [], returns_scenarios, n_points=100)
+    # Run frontier with refactored optimizer
+    frontier = opt.run_frontier(risk_adj_df, cov_blended_df, returns_scenarios, n_points=100)
     
     frontier_df = pd.DataFrame(frontier)
     for i, inst in enumerate(instruments):

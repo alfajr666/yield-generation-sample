@@ -29,7 +29,9 @@
     "liquidity_score": 3,
     "tier": 2,
     "data_source": "/Users/gilangfajar/Documents/Personal Files/Project/delomite/tiga/src/../data/raw/pendle_tvl.csv",
-    "assumed": true
+    "assumed": true,
+    "return_cap": 0.14,
+    "return_cap_rationale": "Conservative forward return ceiling. DeFi yields are noisy — cap prevents spot APY spikes from driving corner allocations."
   },
   "pendle_yt": {
     "p": 0.006,
@@ -37,6 +39,8 @@
     "liquidity_score": 2,
     "tier": 3,
     "data_source": "/Users/gilangfajar/Documents/Personal Files/Project/delomite/tiga/src/../data/raw/pendle_tvl.csv",
-    "assumed": true
+    "assumed": true,
+    "return_cap": 0.18,
+    "return_cap_rationale": "Conservative forward return ceiling applied to YT. Note: current realized YT yield is negative. Cap is relevant only in high-yield environments."
   }
 }

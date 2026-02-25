@@ -23,6 +23,17 @@ def apply_liquidity_haircut(yield_series, liquidity_score):
     penalty = liquidity_penalty_map.get(liquidity_score, 0.0100)  # Default to high penalty if score invalid
     return yield_series - penalty
 
+def apply_return_caps(risk_df, params):
+    """Apply return caps from protocol_params if defined.
+    """
+    for instr in ['pendle_pt', 'pendle_yt']:
+        cap = params.get(instr, {}).get('return_cap', None)
+        if cap is not None:
+            mask = risk_df['instrument'] == instr
+            risk_df.loc[mask, 'risk_adjusted_yield_idr'] = \
+                risk_df.loc[mask, 'risk_adjusted_yield_idr'].clip(upper=cap)
+    return risk_df
+
 def sensitivity_table(yield_series, p_range, s):
     """Generate a table of risk-adjusted yields across a range of p (probability)."""
     results = {}
@@ -126,4 +137,23 @@ if __name__ == "__main__":
     output_json = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "protocol_params.json")
     update_protocol_params(scores, source_flags, output_json)
     print("Liquidity scores updated in", output_json)
+
+    # Step -3 Apply the caps:
+    # Load the risk-adjusted returns if they exist
+    returns_path = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "risk_adjusted_returns.csv")
+    if os.path.exists(returns_path):
+        risk_df = pd.read_csv(returns_path)
+        with open(output_json, 'r') as f:
+            params = json.load(f)
+        
+        # Apply return caps from protocol_params if defined
+        for instr in ['pendle_pt', 'pendle_yt']:
+            cap = params.get(instr, {}).get('return_cap', None)
+            if cap is not None:
+                mask = risk_df['instrument'] == instr
+                risk_df.loc[mask, 'risk_adjusted_yield_idr'] = \
+                    risk_df.loc[mask, 'risk_adjusted_yield_idr'].clip(upper=cap)
+        
+        risk_df.to_csv(returns_path, index=False)
+        print("Return caps applied to", returns_path)
 
