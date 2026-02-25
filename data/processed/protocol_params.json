@@ -42,5 +42,6 @@
     "assumed": true,
     "return_cap": 0.18,
     "return_cap_rationale": "Conservative forward return ceiling applied to YT. Note: current realized YT yield is negative. Cap is relevant only in high-yield environments."
-  }
+  },
+  "_todo": "enforce mmf + sbn >= 0.20 when Pendle YT reactivates"
 }
