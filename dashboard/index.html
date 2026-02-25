@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yield Optimization Model | Delomite Dashboard</title>
+    <!-- Chart Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <!-- Data Source -->
+    <script src="data.js"></script>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #0f0f0f;
+            --card-border: #1e1e1e;
+            --accent-color: #00d1b2;
+            /* Teal */
+            --accent-glow: rgba(0, 209, 178, 0.15);
+            --text-primary: #f0f0f0;
+            --text-secondary: #888888;
+            --header-height: 70px;
+            --sidebar-width: 260px;
+            --font-main: 'Inter', -apple-system, system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --status-active: #00d1b2;
+            --status-excluded: #ff4757;
+            --status-warning: #ffa502;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            display: flex;
+            letter-spacing: -0.01em;
+        }
+
+        /* Sidebar Styles */
+        aside {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background-color: #080808;
+            border-right: 1px solid var(--card-border);
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 0;
+            z-index: 100;
+        }
+
+        .brand {
+            padding: 0 30px;
+            margin-bottom: 60px;
+        }
+
+        .brand h1 {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: #fff;
+            background: linear-gradient(135deg, #fff 0%, #00d1b2 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand p {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 8px;
+            font-weight: 700;
+        }
+
+        nav {
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 16px 30px;
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            margin-bottom: 4px;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .nav-item.active {
+            color: var(--accent-color);
+            background: linear-gradient(90deg, rgba(0, 209, 178, 0.08) 0%, rgba(0, 209, 178, 0) 100%);
+            border-left-color: var(--accent-color);
+        }
+
+        .nav-item span {
+            margin-right: 16px;
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
+        .sidebar-footer {
+            padding: 0 30px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            opacity: 0.6;
+        }
+
+        /* Main Content area */
+        main {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            width: calc(100% - var(--sidebar-width));
+            background: radial-gradient(circle at top right, #0d0d0d, #050505);
+        }
+
+        header {
+            height: var(--header-height);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background-color: rgba(5, 5, 5, 0.7);
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-pill {
+            background-color: rgba(0, 209, 178, 0.05);
+            color: var(--accent-color);
+            padding: 5px 14px;
+            border-radius: 100px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(0, 209, 178, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-pill::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .toggle-container {
+            display: flex;
+            background-color: #000;
+            padding: 3px;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+        }
+
+        .toggle-btn {
+            padding: 6px 18px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .toggle-btn.active {
+            background-color: var(--card-border);
+            color: var(--text-primary);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Dashboard Container */
+        .content-container {
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .page {
+            display: none;
+            animation: slideUp 0.5s cubic-bezier(0, 0, 0.2, 1);
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Generic Card Styles */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #333;
+        }
+
+        .card-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .stat-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Grid */
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        /* Utility */
+        .mono {
+            font-family: var(--font-mono);
+        }
+
+        .teal {
+            color: var(--accent-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            text-align: left;
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--card-border);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside>
+        <div class="brand">
+            <h1>DELOMITE</h1>
+            <p>Yield Optimization</p>
+        </div>
+
+        <nav id="sidebar-nav">
+            <div class="nav-item active" data-page="overview">
+                <span>◈</span> Overview
+            </div>
+            <div class="nav-item" data-page="frontier">
+                <span>◉</span> Efficient Frontier
+            </div>
+            <div class="nav-item" data-page="allocations">
+                <span>≡</span> Portfolio Allocations
+            </div>
+            <div class="nav-item" data-page="simulation">
+                <span>⊛</span> Simulation
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            Built by Gilang F.W.<br>
+            Senior Treasury Ops<br>
+            <a href="https://delomite.com" style="color: var(--accent-color); text-decoration: none;">delomite.com</a>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="header-left">
+                <div class="status-pill" id="status-badge">Model Active</div>
+                <div id="fetch-date"
+                    style="font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono);">2026-02-25
+                </div>
+            </div>
+            <div class="toggle-container">
+                <div class="toggle-btn active" id="btn-idr" onclick="setCurrency('IDR')">IDR</div>
+                <div class="toggle-btn" id="btn-usd" onclick="setCurrency('USD')">USD</div>
+            </div>
+        </header>
+
+        <div class="content-container">
+            <!-- OVERVIEW PAGE -->
+            <div id="overview" class="page active">
+                <div class="grid-4">
+                    <div class="card">
+                        <div class="card-title">Active Instruments</div>
+                        <div class="stat-value teal" id="stat-instruments">--</div>
+                        <div class="stat-sub">1 excluded by risk engine</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Frontier Range</div>
+                        <div class="stat-value" id="stat-range">--</div>
+                        <div class="stat-sub" id="label-range-currency">Annualized Return (IDR)</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Balanced Return</div>
+                        <div class="stat-value" id="stat-balanced-return">--</div>
+                        <div class="stat-sub" id="label-balanced-currency">Expected Yield</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">95% CVaR (Tail)</div>
+                        <div class="stat-value" id="stat-balanced-cvar">--</div>
+                        <div class="stat-sub">Balanced Portfolio Exposure</div>
+                    </div>
+                </div>
+
+                <div class="card" style="border-left: 4px solid var(--status-warning);">
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">Pendle YT — Currently Excluded</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+                        Realized yield: <span class="mono" style="color: var(--status-excluded);">-32.4%</span>
+                        annualized. The optimizer dynamically excludes instruments with negative risk-adjusted returns.
+                        YT will re-enter the frontier automatically when market conditions recover. The 15%
+                        concentration cap remains in the constraint architecture.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Named Portfolio Summary</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Portfolio</th>
+                                <th>Expected Return</th>
+                                <th>95% CVaR</th>
+                                <th>On-Chain Weight</th>
+                                <th>Fixed Weight</th>
+                                <th>Strategy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FRONTIER PAGE -->
+            <div id="frontier" class="page">
+                <div class="grid-4" style="grid-template-columns: 1fr 3fr; gap: 24px;">
+                    <div>
+                        <div class="card">
+                            <h3 class="card-title">Model Overview</h3>
+                            <p
+                                style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px;">
+                                Each point on this curve represents a portfolio that minimizes CVaR for a given level of
+                                expected return.
+                            </p>
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                                    Confidence Level</div>
+                                <div style="font-size: 18px; font-weight: 700;">95.0%</div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                                    Scenario Count</div>
+                                <div style="font-size: 18px; font-weight: 700;">30,000</div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">
+                                    Optimization Engine</div>
+                                <div style="font-size: 18px; font-weight: 700;">Clarabel / CVXPY</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Mean-CVaR Efficient Frontier</div>
+                        <div style="height: 500px; position: relative;">
+                            <canvas id="frontierChart"></canvas>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 20px; line-height: 1.6;">
+                            The frontier is constructed using 30,000 synthetic scenarios sampled from a regime-blended
+                            covariance matrix (85% normal, 15% stress). Pendle YT is excluded from this frontier due to
+                            negative risk-adjusted yield.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALLOCATIONS PAGE -->
+            <div id="allocations" class="page">
+                <div class="grid-4" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+                    <div class="card" style="text-align: center;">
+                        <h3 class="card-title">Min Risk</h3>
+                        <div style="height: 200px; margin: 20px 0;"><canvas id="chart-min-risk"></canvas></div>
+                        <div id="legend-min-risk"></div>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <h3 class="card-title">Balanced</h3>
+                        <div style="height: 200px; margin: 20px 0;"><canvas id="chart-balanced"></canvas></div>
+                        <div id="legend-balanced"></div>
+                    </div>
+                    <div class="card" style="text-align: center;">
+                        <h3 class="card-title">Max Yield</h3>
+                        <div style="height: 200px; margin: 20px 0;"><canvas id="chart-max-yield"></canvas></div>
+                        <div id="legend-max-yield"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Instrument Weights Detail</div>
+                    <table id="instrument-table">
+                        <thead>
+                            <tr>
+                                <th>Instrument</th>
+                                <th>Type</th>
+                                <th>Min Risk</th>
+                                <th>Balanced</th>
+                                <th>Max Yield</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SIMULATION PAGE -->
+            <div id="simulation" class="page">
+                <div class="card">
+                    <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0;">
+                        <strong>Monte Carlo Simulation:</strong> Simulated 12-month portfolio performance for each named
+                        portfolio. One stress event is inserted between day 180–270, applying the stress covariance
+                        matrix and a -15% shock to on-chain returns for 14 days. This is synthetic — it illustrates how
+                        each portfolio would behave under a DeFi liquidity event.
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-title">12-Month Performance Simulation</div>
+                    <div style="height: 450px; position: relative;">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Stress Impact Summary</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Portfolio</th>
+                                <th>Pre-Stress Value</th>
+                                <th>Drawdown During Stress</th>
+                                <th>Recovery Days</th>
+                                <th>End Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stress-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 15px; font-style: italic;">
+                        Simulation uses synthetic scenario sampling. Stress event timing and magnitude are illustrative.
+                        Past model behavior does not predict future performance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- State Management ---
+        let currentCurrency = 'IDR';
+        let charts = {};
+        const INSTRUMENT_COLORS = {
+            'mmf': '#00d1b2',      // Teal
+            'sbn': '#3498db',      // Blue
+            'aave': '#f1c40f',     // Amber
+            'pendle_pt': '#9b59b6', // Purple
+            'pendle_yt': '#e74c3c'  // Red
+        };
+
+        const PORTFOLIO_COLORS = {
+            'min_risk': '#2ecc71', // Green
+            'balanced': '#3498db', // Blue
+            'max_yield': '#e67e22'  // Amber
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            updateDashboard();
+        });
+
+        function initNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.getAttribute('data-page');
+
+                    // Update Sidebar
+                    navItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+
+                    // Update Pages
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                    document.getElementById(page).classList.add('active');
+
+                    // Trigger Chart Resize/Init
+                    handlePageChange(page);
+                });
+            });
+        }
+
+        function setCurrency(curr) {
+            currentCurrency = curr;
+            document.getElementById('btn-idr').classList.toggle('active', curr === 'IDR');
+            document.getElementById('btn-usd').classList.toggle('active', curr === 'USD');
+            updateDashboard();
+        }
+
+        // --- Data Formatting ---
+        function formatVal(val, type = 'currency') {
+            if (type === 'percent') {
+                return (val * 100).toFixed(2) + '%';
+            }
+
+            if (currentCurrency === 'IDR') {
+                // Return in Rp Billions
+                return 'Rp ' + (val / 1000000000).toFixed(2) + ' B';
+            } else {
+                // Return in $ Millions
+                const usdVal = val / META.usd_idr_rate;
+                return '$ ' + (usdVal / 1000000).toFixed(2) + ' M';
+            }
+        }
+
+        function updateDashboard() {
+            // Update Header
+            document.getElementById('fetch-date').innerText = 'Data as of: ' + META.fetch_date;
+
+            // Update Stat Cards (Overview)
+            document.getElementById('stat-instruments').innerText = META.active_instruments.length;
+
+            const minRet = FRONTIER_DATA[0].expected_return;
+            const maxRet = FRONTIER_DATA[FRONTIER_DATA.length - 1].expected_return;
+            document.getElementById('stat-range').innerText = formatVal(minRet, 'percent') + ' → ' + formatVal(maxRet, 'percent');
+            document.getElementById('label-range-currency').innerText = `Annualized Return (${currentCurrency})`;
+
+            const balanced = NAMED_PORTFOLIOS.balanced;
+            document.getElementById('stat-balanced-return').innerText = formatVal(balanced.expected_return, 'percent');
+            document.getElementById('stat-balanced-cvar').innerText = formatVal(balanced.cvar_95, 'percent');
+            document.getElementById('label-balanced-currency').innerText = `Expected Yield (${currentCurrency})`;
+
+            // Populate Tables
+            renderTables();
+
+            // Refresh Charts
+            refreshCharts();
+        }
+
+        function renderTables() {
+            // Portfolio Summary Table
+            const summaryBody = document.getElementById('portfolio-table-body');
+            summaryBody.innerHTML = '';
+
+            const configs = {
+                'min_risk': { label: 'Min Risk', strategy: 'Principal Safety' },
+                'balanced': { label: 'Balanced', strategy: 'Yield + Anchor' },
+                'max_yield': { label: 'Max Yield', strategy: 'Constraint Max' }
+            };
+
+            Object.entries(NAMED_PORTFOLIOS).forEach(([key, p]) => {
+                const tr = document.createElement('tr');
+                const onChainW = p.weights.aave + p.weights.pendle_pt + p.weights.pendle_yt;
+                const fixedW = p.weights.mmf + p.weights.sbn;
+
+                tr.innerHTML = `
+                    <td class="teal" style="font-weight: 700;">${configs[key].label}</td>
+                    <td class="mono">${formatVal(p.expected_return, 'percent')}</td>
+                    <td class="mono">${formatVal(p.cvar_95, 'percent')}</td>
+                    <td class="mono">${(onChainW * 100).toFixed(1)}%</td>
+                    <td class="mono">${(fixedW * 100).toFixed(1)}%</td>
+                    <td style="color: var(--text-secondary);">${configs[key].strategy}</td>
+                `;
+                summaryBody.appendChild(tr);
+            });
+
+            // Instrument Weights Table
+            const instBody = document.querySelector('#instrument-table tbody');
+            instBody.innerHTML = '';
+
+            const instruments = [
+                { id: 'mmf', name: 'MMF (RDPU)', type: 'IDR Money Market' },
+                { id: 'sbn', name: 'SBN', type: 'IDR Gov Bond' },
+                { id: 'aave', name: 'Aave USDC/USDT', type: 'On-chain Lending' },
+                { id: 'pendle_pt', name: 'Pendle PT', type: 'Fixed Yield (PT)' },
+                { id: 'pendle_yt', name: 'Pendle YT', type: 'Leveraged Yield (YT)' }
+            ];
+
+            instruments.forEach(inst => {
+                const tr = document.createElement('tr');
+                const status = inst.id === 'pendle_yt' ? '<span style="color: var(--status-excluded)">Excluded</span>' : 'Active';
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${inst.name}</td>
+                    <td style="color: var(--text-secondary);">${inst.type}</td>
+                    <td class="mono">${(NAMED_PORTFOLIOS.min_risk.weights[inst.id] * 100).toFixed(1)}%</td>
+                    <td class="mono">${(NAMED_PORTFOLIOS.balanced.weights[inst.id] * 100).toFixed(1)}%</td>
+                    <td class="mono">${(NAMED_PORTFOLIOS.max_yield.weights[inst.id] * 100).toFixed(1)}%</td>
+                    <td>${status}</td>
+                `;
+                instBody.appendChild(tr);
+            });
+
+            // Stress Impact Table
+            const stressBody = document.getElementById('stress-table-body');
+            stressBody.innerHTML = '';
+
+            Object.entries(SIMULATION_DATA).forEach(([key, series]) => {
+                const preStress = series[STRESS_EVENT.day - 1];
+                const stressEndIndex = Math.min(STRESS_EVENT.day + STRESS_EVENT.duration_days, 364);
+                const duringStress = series[stressEndIndex];
+                const endVal = series[364];
+
+                const preMetric = preStress.return_idr;
+                const duringMetric = duringStress.return_idr;
+                const endMetric = endVal.return_idr;
+
+                const drawdown = ((duringMetric - preMetric) / preMetric * 100).toFixed(2) + '%';
+
+                // Simplified recovery days calculation
+                let recoveryDays = 0;
+                for (let i = stressEndIndex; i < 365; i++) {
+                    if (series[i].return_idr >= preMetric) {
+                        recoveryDays = i - stressEndIndex;
+                        break;
+                    }
+                    if (i === 364) recoveryDays = "> 100";
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 700;">${configs[key].label}</td>
+                    <td class="mono">${formatVal(preMetric)}</td>
+                    <td class="mono" style="color: var(--status-excluded)">${drawdown}</td>
+                    <td class="mono">${recoveryDays} days</td>
+                    <td class="mono" style="color: var(--accent-color); font-weight: 700;">${formatVal(endMetric)}</td>
+                `;
+                stressBody.appendChild(tr);
+            });
+        }
+
+        // --- Charts Implementation ---
+        function refreshCharts() {
+            renderFrontierChart();
+            renderAllocationCharts();
+            renderSimulationChart();
+        }
+
+        function handlePageChange(page) {
+            // Special handling for chart redraws if needed
+            if (page === 'frontier') renderFrontierChart();
+            if (page === 'allocations') renderAllocationCharts();
+            if (page === 'simulation') renderSimulationChart();
+        }
+
+        function renderFrontierChart() {
+            const ctx = document.getElementById('frontierChart').getContext('2d');
+            if (charts.frontier) charts.frontier.destroy();
+
+            const dataPoints = FRONTIER_DATA.map(d => ({ x: d.cvar * 100, y: d.expected_return * 100 }));
+
+            const namedPoints = [
+                {
+                    label: 'Min Risk',
+                    x: NAMED_PORTFOLIOS.min_risk.cvar_95 * 100,
+                    y: NAMED_PORTFOLIOS.min_risk.expected_return * 100,
+                    color: PORTFOLIO_COLORS.min_risk
+                },
+                {
+                    label: 'Balanced',
+                    x: NAMED_PORTFOLIOS.balanced.cvar_95 * 100,
+                    y: NAMED_PORTFOLIOS.balanced.expected_return * 100,
+                    color: PORTFOLIO_COLORS.balanced
+                },
+                {
+                    label: 'Max Yield',
+                    x: NAMED_PORTFOLIOS.max_yield.cvar_95 * 100,
+                    y: NAMED_PORTFOLIOS.max_yield.expected_return * 100,
+                    color: PORTFOLIO_COLORS.max_yield
+                }
+            ];
+
+            charts.frontier = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Frontier',
+                            data: dataPoints,
+                            borderColor: 'rgba(0, 209, 178, 0.6)',
+                            borderWidth: 2,
+                            showLine: true,
+                            pointRadius: 0,
+                            pointHoverRadius: 5
+                        },
+                        ...namedPoints.map(p => ({
+                            label: p.label,
+                            data: [{ x: p.x, y: p.y }],
+                            pointRadius: 8,
+                            pointBackgroundColor: p.color,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }))
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: '95% CVaR (%)', color: '#999' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#666' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Expected Return (%)', color: '#999' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#666' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    if (ctx.dataset.label === 'Frontier') {
+                                        return `Return: ${ctx.parsed.y.toFixed(2)}%, CVaR: ${ctx.parsed.x.toFixed(2)}%`;
+                                    }
+                                    return `${ctx.dataset.label} (Point)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAllocationCharts() {
+            const types = ['min_risk', 'balanced', 'max_yield'];
+            types.forEach(type => {
+                const canvasId = `chart-${type.replace('_', '-')}`;
+                const legendId = `legend-${type.replace('_', '-')}`;
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                if (charts[type]) charts[type].destroy();
+
+                const weights = NAMED_PORTFOLIOS[type].weights;
+                const labels = Object.keys(weights).map(k => k.toUpperCase().replace('_', ' '));
+                const data = Object.values(weights);
+                const backgroundColors = Object.keys(weights).map(k => INSTRUMENT_COLORS[k]);
+
+                charts[type] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 0,
+                            hoverOffset: 12
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+
+                // Custom Legend
+                const legendContainer = document.getElementById(legendId);
+                legendContainer.innerHTML = '';
+                legendContainer.style.display = 'grid';
+                legendContainer.style.gridTemplateColumns = '1fr 1fr';
+                legendContainer.style.gap = '8px';
+                legendContainer.style.marginTop = '20px';
+
+                Object.entries(weights).forEach(([inst, w]) => {
+                    const div = document.createElement('div');
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.fontSize = '12px';
+                    div.style.color = (w > 0) ? 'var(--text-primary)' : 'var(--text-secondary)';
+                    div.innerHTML = `
+                        <div style="width: 8px; height: 8px; border-radius: 2px; background: ${INSTRUMENT_COLORS[inst]}; margin-right: 8px;"></div>
+                        <span style="flex-grow: 1; text-align: left;">${inst.toUpperCase()}</span>
+                        <span class="mono" style="font-weight: 600;">${(w * 100).toFixed(1)}%</span>
+                    `;
+                    legendContainer.appendChild(div);
+                });
+            });
+        }
+
+        function renderSimulationChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            if (charts.simulation) charts.simulation.destroy();
+
+            const field = currentCurrency === 'IDR' ? 'return_idr' : 'return_usd';
+            const labels = SIMULATION_DATA.min_risk.map(d => `Day ${d.day}`);
+
+            const datasets = [
+                { key: 'min_risk', name: 'Min Risk' },
+                { key: 'balanced', name: 'Balanced' },
+                { key: 'max_yield', name: 'Max Yield' }
+            ].map(s => ({
+                label: s.name,
+                data: SIMULATION_DATA[s.key].map(d => d[field]),
+                borderColor: PORTFOLIO_COLORS[s.key],
+                backgroundColor: PORTFOLIO_COLORS[s.key] + '15',
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                tension: 0.1
+            }));
+
+            // Stress Event Region
+            const stressStart = STRESS_EVENT.day;
+            const stressEnd = Math.min(STRESS_EVENT.day + STRESS_EVENT.duration_days, 365);
+
+            charts.simulation = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: {
+                                color: '#666',
+                                maxTicksLimit: 12,
+                                autoSkip: true
+                            }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: {
+                                color: '#666',
+                                callback: (val) => formatVal(val)
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { color: '#999', boxWidth: 12, padding: 20 }
+                        },
+                        annotation: {
+                            annotations: {
+                                stressBox: {
+                                    type: 'box',
+                                    xMin: stressStart - 1,
+                                    xMax: stressEnd - 1,
+                                    backgroundColor: 'rgba(231, 76, 60, 0.08)',
+                                    borderColor: 'rgba(231, 76, 60, 0.3)',
+                                    borderWidth: 1,
+                                    label: {
+                                        display: true,
+                                        content: 'Stress Event',
+                                        position: 'start',
+                                        backgroundColor: '#e74c3c',
+                                        color: '#fff',
+                                        font: { size: 10, weight: 'bold' }
+                                    }
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#111',
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            titleColor: '#fff',
+                            bodyColor: '#ccc',
+                            padding: 12,
+                            callbacks: {
+                                label: (ctx) => `${ctx.dataset.label}: ${formatVal(ctx.parsed.y)}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

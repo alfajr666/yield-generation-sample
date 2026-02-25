@@ -19,6 +19,7 @@ venv/
 !README.md
 README_backup.md
 *brief.md
+dashboard_build_brief.md
 .gemini/
 brain/
 
@@ -46,3 +47,4 @@ scripts/*.py
 !scripts/process_risk_adjustment.py
 !scripts/process_optimization.py
 !scripts/process_visualization.py
+!scripts/generate_dashboard_data.py
