@@ -14,6 +14,9 @@ The model solves a specific, real problem: how should a crypto exchange treasury
 
 It features an **efficient frontier** built on CVaR optimization, incorporating two explicit risk layers that standard Markowitz ignores: smart contract exploit probability and liquidity heterogeneity.
 
+**[Live Dashboard →](https://alfajr666.github.io/yield-generation-sample/dashboard/)**  
+**[Detailed Analysis & Methodology →](https://delomite.com/blog/yield-generation-model/)**
+
 ### Business Context
 Under **POJK No. 27 of 2024**, a licensed exchange must maintain minimum equity of Rp 50 billion. This model manages **own capital above the regulatory equity floor**, estimated at $2–5M for a newly licensed exchange. Stablecoins are classified as crypto assets, making on-chain deployment a deliberate, risk-governed decision.
 
