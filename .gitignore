@@ -18,6 +18,7 @@ venv/
 *.md
 !README.md
 README_backup.md
+*brief.md
 .gemini/
 brain/
 
@@ -32,6 +33,7 @@ data/processed/*.csv
 !data/processed/protocol_params.json
 # Keep charts for README visibility
 !data/processed/charts/
+data/processed/charts/*_fixed.png
 
 # Scripts
 # Ignore research/debug noise in scripts folder
